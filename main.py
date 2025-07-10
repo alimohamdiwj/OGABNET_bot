@@ -1,3 +1,4 @@
+import os
 from telegram import (
     Update, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
 )
@@ -6,14 +7,10 @@ from telegram.ext import (
     CallbackQueryHandler, ContextTypes, ConversationHandler, filters
 )
 
-# توکن جدید
-TOKEN = "8021694434:AAFtR1r7XuWCCkfqQK4cgxCpArhuM1ZN8qY"
-
+TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL = "@ogabnet"
 ADMIN_ID = 7400790423
 CONFIG_FILE = "configs/config_1day.txt"
-
-# مراحل کانورسیشن
 WAITING_CONFIG_TEXT = 1
 
 start_keyboard = [["✅ چک عضویت در کانال", "📢 ورود به کانال"]]
@@ -52,14 +49,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-# *** اینجا تابع چک عضویت اصلاح شده ***
 async def check_membership(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     try:
         member = await context.bot.get_chat_member(chat_id=CHANNEL, user_id=user_id)
         if member.status in ["member", "creator", "administrator"]:
             await update.message.reply_text(
-                "🎉 تبریک! شما عضو کانال هستید.\nاکنون می‌توانید از منوی اصلی استفاده کنید.",
+                "🎉 تبریک! شما عضو کانال هستید.",
                 reply_markup=ReplyKeyboardMarkup(main_menu_keyboard, resize_keyboard=True),
             )
         else:
@@ -70,8 +66,7 @@ async def check_membership(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
     except Exception as e:
         await update.message.reply_text(
-            f"❌ خطا در بررسی عضویت شما: {e}\n"
-            "لطفاً مطمئن شوید ربات عضو کانال است و نام کانال صحیح است."
+            f"❌ خطا در بررسی عضویت: {e}"
         )
 
 
@@ -79,67 +74,46 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     text = update.message.text
 
-    # ادمین در حال نوشتن کانفیگ است
     if user_id == ADMIN_ID and context.user_data.get("waiting_for_config_text"):
         await send_custom_message_to_user(update, context, text)
         return
 
     if text == "✅ چک عضویت در کانال":
         await check_membership(update, context)
-
     elif text == "📢 ورود به کانال":
         await update.message.reply_text(
-            f"لینک کانال:\n{CHANNEL}\n"
-            "لطفاً ابتدا عضو کانال شوید و سپس گزینه چک عضویت را انتخاب کنید.",
+            f"لینک کانال:\n{CHANNEL}",
             reply_markup=ReplyKeyboardMarkup(start_keyboard, resize_keyboard=True),
         )
-
     elif text == "🧩 سرویس ها و اشتراک های من 🧩":
         await update.message.reply_text("💡 شما هیچ اشتراکی از عقاب نت تهیه نکردید 💡")
-
     elif text == "🛍️💳 کیف پول/موجودی من 💳🛍️":
         await update.message.reply_text(
             "🛍️ کیف پول شما 🛍️",
             reply_markup=ReplyKeyboardMarkup(wallet_keyboard, resize_keyboard=True),
         )
-
     elif text == "💰💰 کیف پول/موجودی من 💰💰":
         await update.message.reply_text(
-            f"☎️ اطلاعات کاربری\n"
             f"🆔 شناسه عددی: {user_id}\n"
             "🗃 کل سرویس‌ها: 0 عدد 📚\n"
             "💵 موجودی کیف پول: 0 تومان 💵"
         )
-
     elif text == "💶💵 افزایش موجودی 💵💶":
         await update.message.reply_text(
             "6219861991474080 بانو زهرا قربانی\n"
-            "📌📌💵💵 پس از پرداخت: 💵💵📌📌\n"
-            "💌 تصویر رسید پرداخت را ارسال نمایید.\n"
-            "🧾 کد سفارش: AE5F313\n"
             "📩 لطفاً تصویر رسید را همینجا ارسال نمایید👇"
         )
-
     elif text == "☎️ پشتیبانی 24 ساعته سریع و الصیف ☎️":
         await update.message.reply_text(
-            "(زمان پاسخ‌دهی با توجه به حجم پیام‌ها متغیر است)\n"
-            "(از شکیبایی شما سپاس‌گزاریم)\n\n"
-            "@Ogabneting  تلگرام 📚\n"
-            "@Ogabnet       روبیکا 📑"
+            "@Ogabneting  تلگرام\n"
+            "@Ogabnet       روبیکا"
         )
-
     elif text == "🥇 خرید اشتراک اختصاصی 🥇":
         await update.message.reply_text(
-            "🥇 خرید اشتراک اختصاصی 🥇\nلطفاً اشتراک مورد نظر را انتخاب کنید:",
+            "🥇 اشتراک را انتخاب کنید:",
             reply_markup=ReplyKeyboardMarkup(subs_keyboard, resize_keyboard=True),
         )
-
-    elif text in [
-        "🇲🇽 Tگیگ25 تک کاربر 100 🎖️",
-        "🇬🇷 Tگیگ35 دو کاربر 135 🥇",
-        "🇫🇮 Tگیگ50 سه کاربر 165 👑",
-        "🇹🇷 Tگیگ100 پنج کاربر 250 ☢️",
-    ]:
+    elif text in [btn[0] for btn in subs_keyboard[:-1]]:
         price_map = {
             "🇲🇽 Tگیگ25 تک کاربر 100 🎖️": "100 هزار تومان",
             "🇬🇷 Tگیگ35 دو کاربر 135 🥇": "135 هزار تومان",
@@ -148,55 +122,40 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
         price = price_map.get(text, "نامشخص")
         await update.message.reply_text(
-            "شماره کارت:\n6219861991474080 خانوم قربانی 🛎️\n\n"
-            "💵 پس از پرداخت:\n"
-            "1️⃣ تصویر رسید پرداخت را ارسال نمایید.\n"
-            "🧾 کد سفارش: AE5F313\n"
-            "📩 لطفاً تصویر رسید را همینجا ارسال نمایید\n\n"
+            f"شماره کارت: 6219861991474080 خانوم قربانی\n"
+            f"📩 لطفاً تصویر رسید را همینجا ارسال نمایید\n"
             f"مبلغ: {price}"
         )
-
     elif text == "📌 سوالات متداول 📌":
         await update.message.reply_text(
-            "📌 سوالات متداول:\nلطفاً موضوع مورد نظر را انتخاب کنید:",
+            "لطفاً موضوع مورد نظر را انتخاب کنید:",
             reply_markup=ReplyKeyboardMarkup(faq_keyboard, resize_keyboard=True),
         )
-
     elif text in [row[0] for row in faq_keyboard[:-1]]:
         faq_answers = {
-            "نحوه اتصال در اندروید": (
-                "برای اتصال در اندروید، ابتدا برنامه مربوطه را نصب و سپس تنظیمات را طبق راهنما انجام دهید."
-            ),
-            "نحوه اتصال در آیفون": (
-                "برای اتصال در آیفون، به تنظیمات VPN رفته و کانفیگ را وارد کنید."
-            ),
-            "نحوه اتصال در کامپیوتر": (
-                "برای اتصال در کامپیوتر، نرم‌افزار را نصب و با اطلاعات حساب خود وارد شوید."
-            ),
+            "نحوه اتصال در اندروید": "برنامه رو نصب کن و کانفیگ وارد کن.",
+            "نحوه اتصال در آیفون": "در تنظیمات VPN، کانفیگ رو وارد کن.",
+            "نحوه اتصال در کامپیوتر": "نرم‌افزار رو نصب و لاگین کن.",
         }
-        await update.message.reply_text(faq_answers.get(text, "اطلاعاتی موجود نیست."))
-
+        await update.message.reply_text(faq_answers.get(text, "اطلاعاتی نیست"))
     elif text == "💱♻️ تمدید سرویس‌ها ♻️💱":
-        await update.message.reply_text("❗شما هنوز سرویسی از ما خریداری نکرده‌اید❗")
-
+        await update.message.reply_text("❗ هنوز سرویسی خریداری نکرده‌اید.")
     elif text == "🚀💲💱 دریافت کانفیگ تست 💱💲🚀":
-        await update.message.reply_text("متأسفانه به دلایل امنیتی، ارائه اکانت تست فعلاً مقدور نیست.")
-
+        await update.message.reply_text("فعلاً ارائه اکانت تست مقدور نیست.")
     elif text == "🔙 بازگشت به منو":
         await update.message.reply_text(
             "🧩 منوی اصلی عقاب نت 🧩",
             reply_markup=ReplyKeyboardMarkup(main_menu_keyboard, resize_keyboard=True),
         )
-
     else:
-        await update.message.reply_text("لطفاً از دکمه‌های کیبورد استفاده کنید.")
+        await update.message.reply_text("لطفاً از دکمه‌ها استفاده کنید.")
 
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
     file_id = update.message.photo[-1].file_id
     caption = (
-        "📥 رسید پرداخت از:\n"
+        f"📥 رسید پرداخت از:\n"
         f"👤 {user.full_name}\n"
         f"🆔 {user.id}\n"
         f"📛 @{user.username or 'ندارد'}\n\n"
@@ -205,71 +164,51 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = InlineKeyboardMarkup(
         [[InlineKeyboardButton("🚀 ارسال کانفیگ", callback_data=f"sendcfg_{user.id}")]]
     )
-
-    # ارسال عکس رسید به ادمین
     await context.bot.send_photo(
         chat_id=ADMIN_ID, photo=file_id, caption=caption, reply_markup=keyboard
     )
-
-    # پیام به کاربر
-    await update.message.reply_text(
-        "رسید پرداختی شما دریافت شد 💰💵\n"
-        "🇮🇷🇮🇷 همکاران ما سخت در تلاشند🇮🇷🇮🇷\n"
-        "که به بهترین و باکیفیت‌ترین حالت ممکن\n"
-        "🚀 با شما در ارتباط باشند 🚀\n"
-        "تا دقایقی دیگر کانفیگ به دستتون می‌رسه\n"
-        "😘 مرسی از صبوری شما 😘"
-    )
+    await update.message.reply_text("رسید دریافت شد. به‌زودی کانفیگ ارسال می‌شود.")
 
 
 async def send_custom_message_to_user(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str):
     user_id = context.user_data.get("sendcfg_user_id")
     if not user_id:
-        await update.message.reply_text("❌ خطا! شناسه کاربر پیدا نشد.")
+        await update.message.reply_text("❌ شناسه کاربر یافت نشد.")
         context.user_data.pop("waiting_for_config_text", None)
         return
-
     try:
         await context.bot.send_message(chat_id=user_id, text=text)
-        await update.message.reply_text(
-            "✅ متن کانفیگ با موفقیت به کاربر ارسال شد.",
+        await update.message.reply_text("✅ کانفیگ ارسال شد.",
             reply_markup=ReplyKeyboardMarkup(main_menu_keyboard, resize_keyboard=True),
         )
     except Exception as e:
         await update.message.reply_text(f"❌ خطا در ارسال پیام: {e}")
-
-    context.user_data.pop("waiting_for_config_text", None)
-    context.user_data.pop("sendcfg_user_id", None)
+    context.user_data.clear()
 
 
 async def send_config_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
     if query.from_user.id != ADMIN_ID:
-        await query.reply_text("❌ شما مجوز این کار را ندارید.")
+        await query.reply_text("❌ شما مجوز ندارید.")
         return
-
     _, user_id_str = query.data.split("_", maxsplit=1)
     user_id = int(user_id_str)
     context.user_data["sendcfg_user_id"] = user_id
     context.user_data["waiting_for_config_text"] = True
-
     await query.message.reply_text(
-        "لطفاً متن کانفیگ را وارد کنید یا برای لغو 'انصراف' را ارسال کنید.",
+        "متن کانفیگ را ارسال کن یا 'انصراف' بزن.",
         reply_markup=ReplyKeyboardMarkup([["انصراف"]], resize_keyboard=True),
     )
 
 
 async def cancel_config_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.text == "انصراف":
-        context.user_data.pop("waiting_for_config_text", None)
-        context.user_data.pop("sendcfg_user_id", None)
+        context.user_data.clear()
         await update.message.reply_text(
-            "ارسال کانفیگ لغو شد.",
+            "لغو شد.",
             reply_markup=ReplyKeyboardMarkup(main_menu_keyboard, resize_keyboard=True),
         )
-        return
 
 
 if __name__ == "__main__":
